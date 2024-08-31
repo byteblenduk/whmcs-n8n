@@ -110,38 +110,37 @@ function whmcs_n8n_ConfigOptions()
  */
 function whmcs_n8n_CreateAccount(array $params)
 {
-    try {
-        // Call the service's provisioning function, using the values provided
-        // by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'domain' => 'The domain of the service to provision',
-        //     'username' => 'The username to access the new service',
-        //     'password' => 'The password to access the new service',
-        //     'configoption1' => 'The amount of disk space to provision',
-        //     'configoption2' => 'The new services secret key',
-        //     'configoption3' => 'Whether or not to enable FTP',
-        //     ...
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+    $apiUrl = "{$params['configoption1']}{$params['configoption3']}";
 
-        return $e->getMessage();
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+        ));
+    
+    $response = curl_exec($ch);
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+    
+    if ($httpCode == 200) {
+        return 'success';
+    } else {
+        return 'Failed: Request failed with status code: ' . $httpCode;
+    }
 }
+
 
 /**
  * Suspend an instance of a product/service.
