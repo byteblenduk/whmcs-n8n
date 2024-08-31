@@ -1,44 +1,7 @@
 <?php
-/**
- * WHMCS SDK Sample Provisioning Module
- *
- * Provisioning Modules, also referred to as Product or Server Modules, allow
- * you to create modules that allow for the provisioning and management of
- * products and services in WHMCS.
- *
- * This sample file demonstrates how a provisioning module for WHMCS should be
- * structured and exercises all supported functionality.
- *
- * Provisioning Modules are stored in the /modules/servers/ directory. The
- * module name you choose must be unique, and should be all lowercase,
- * containing only letters & numbers, always starting with a letter.
- *
- * Within the module itself, all functions must be prefixed with the module
- * filename, followed by an underscore, and then the function name. For this
- * example file, the filename is "provisioningmodule" and therefore all
- * functions begin "provisioningmodule_".
- *
- * If your module or third party API does not support a given function, you
- * should not define that function within your module. Only the _ConfigOptions
- * function is required.
- *
- * For more information, please refer to the online documentation.
- *
- * @see https://developers.whmcs.com/provisioning-modules/
- *
- * @copyright Copyright (c) WHMCS Limited 2017
- * @license https://www.whmcs.com/license/ WHMCS Eula
- */
-
 if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
-
-// Require any libraries needed for the module to function.
-// require_once __DIR__ . '/path/to/library/loader.php';
-//
-// Also, perform any initialization required by the service's library.
-
 /**
  * Define module related meta data.
  *
@@ -49,16 +12,12 @@ if (!defined("WHMCS")) {
  *
  * @return array
  */
-function provisioningmodule_MetaData()
+function whmcs_n8n_MetaData()
 {
     return array(
-        'DisplayName' => 'Demo Provisioning Module',
-        'APIVersion' => '1.1', // Use API Version 1.1
-        'RequiresServer' => true, // Set true if module requires a server to work
-        'DefaultNonSSLPort' => '1111', // Default Non-SSL Connection Port
-        'DefaultSSLPort' => '1112', // Default SSL Connection Port
-        'ServiceSingleSignOnLabel' => 'Login to Panel as User',
-        'AdminSingleSignOnLabel' => 'Login to Panel as Admin',
+        'DisplayName' => 'n8n Provisioning Module',
+        'APIVersion' => '1.1',
+        'RequiresServer' => false,
     );
 }
 
@@ -85,50 +44,50 @@ function provisioningmodule_MetaData()
  *
  * @return array
  */
-function provisioningmodule_ConfigOptions()
+function whmcs_n8n_ConfigOptions()
 {
     return array(
-        // a text field type allows for single line text input
-        'Text Field' => array(
+        'n8n Host' => array(
             'Type' => 'text',
-            'Size' => '25',
-            'Default' => '1024',
-            'Description' => 'Enter in megabytes',
+            'Size' => '32',
+            'Default' => 'http://localhost',
+            'Description' => 'Enter the hostname for your n8n instance',
         ),
-        // a password field type allows for masked text input
-        'Password Field' => array(
-            'Type' => 'password',
-            'Size' => '25',
-            'Default' => '',
-            'Description' => 'Enter secret value here',
+        'n8n Key' => array(
+            'Type' => 'text',
+            'Size' => '32',
+            'Default' => 'api key',
+            'Description' => 'Header authorisation 32 character bearer token',
         ),
-        // the yesno field type displays a single checkbox option
-        'Checkbox Field' => array(
-            'Type' => 'yesno',
-            'Description' => 'Tick to enable',
+        'Create Endpoint' => array(
+            'Type' => 'text',
+            'Size' => '32',
+            'Default' => '/createaccount',
+            'Description' => 'Create account endpoint, added onto host above',
         ),
-        // the dropdown field type renders a select menu of options
-        'Dropdown Field' => array(
-            'Type' => 'dropdown',
-            'Options' => array(
-                'option1' => 'Display Value 1',
-                'option2' => 'Second Option',
-                'option3' => 'Another Option',
-            ),
-            'Description' => 'Choose one',
+        'Suspend Endpoint' => array(
+            'Type' => 'text',
+            'Size' => '32',
+            'Default' => '/suspendaccount',
+            'Description' => 'Suspend account endpoint, added onto host above',
         ),
-        // the radio field type displays a series of radio button options
-        'Radio Field' => array(
-            'Type' => 'radio',
-            'Options' => 'First Option,Second Option,Third Option',
-            'Description' => 'Choose your option!',
+        'Unsuspend Endpoint' => array(
+            'Type' => 'text',
+            'Size' => '32',
+            'Default' => '/unsuspendaccount',
+            'Description' => 'Unsuspend account endpoint, added onto host above',
         ),
-        // the textarea field type allows for multi-line text input
-        'Textarea Field' => array(
-            'Type' => 'textarea',
-            'Rows' => '3',
-            'Cols' => '60',
-            'Description' => 'Freeform multi-line text input field',
+        'Terminate Endpoint' => array(
+            'Type' => 'text',
+            'Size' => '32',
+            'Default' => '/terminateaccount',
+            'Description' => 'Terminate account endpoint, added onto host above',
+        ),
+        'Change Password Endpoint' => array(
+            'Type' => 'text',
+            'Size' => '32',
+            'Default' => '/changepassword',
+            'Description' => 'Change password endpoint, added onto host above',
         ),
     );
 }
@@ -149,7 +108,7 @@ function provisioningmodule_ConfigOptions()
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_CreateAccount(array $params)
+function whmcs_n8n_CreateAccount(array $params)
 {
     try {
         // Call the service's provisioning function, using the values provided
@@ -171,7 +130,7 @@ function provisioningmodule_CreateAccount(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -197,7 +156,7 @@ function provisioningmodule_CreateAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_SuspendAccount(array $params)
+function whmcs_n8n_SuspendAccount(array $params)
 {
     try {
         // Call the service's suspend function, using the values provided by
@@ -205,7 +164,7 @@ function provisioningmodule_SuspendAccount(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -231,7 +190,7 @@ function provisioningmodule_SuspendAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_UnsuspendAccount(array $params)
+function whmcs_n8n_UnsuspendAccount(array $params)
 {
     try {
         // Call the service's unsuspend function, using the values provided by
@@ -239,7 +198,7 @@ function provisioningmodule_UnsuspendAccount(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -264,7 +223,7 @@ function provisioningmodule_UnsuspendAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_TerminateAccount(array $params)
+function whmcs_n8n_TerminateAccount(array $params)
 {
     try {
         // Call the service's terminate function, using the values provided by
@@ -272,7 +231,7 @@ function provisioningmodule_TerminateAccount(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -301,7 +260,7 @@ function provisioningmodule_TerminateAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_ChangePassword(array $params)
+function whmcs_n8n_ChangePassword(array $params)
 {
     try {
         // Call the service's change password function, using the values
@@ -318,7 +277,7 @@ function provisioningmodule_ChangePassword(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -347,7 +306,7 @@ function provisioningmodule_ChangePassword(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_ChangePackage(array $params)
+function whmcs_n8n_ChangePackage(array $params)
 {
     try {
         // Call the service's change password function, using the values
@@ -365,7 +324,7 @@ function provisioningmodule_ChangePackage(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -390,7 +349,7 @@ function provisioningmodule_ChangePackage(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_Renew(array $params)
+function whmcs_n8n_Renew(array $params)
 {
     try {
         // Call the service's provisioning function, using the values provided
@@ -412,7 +371,7 @@ function provisioningmodule_Renew(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -442,7 +401,7 @@ function provisioningmodule_Renew(array $params)
  *
  * @return array
  */
-function provisioningmodule_TestConnection(array $params)
+function whmcs_n8n_TestConnection(array $params)
 {
     try {
         // Call the service's connection test function.
@@ -452,7 +411,7 @@ function provisioningmodule_TestConnection(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -475,11 +434,11 @@ function provisioningmodule_TestConnection(array $params)
  * Define additional actions that an admin user can perform for an
  * instance of a product/service.
  *
- * @see provisioningmodule_buttonOneFunction()
+ * @see whmcs_n8n_buttonOneFunction()
  *
  * @return array
  */
-function provisioningmodule_AdminCustomButtonArray()
+function whmcs_n8n_AdminCustomButtonArray()
 {
     return array(
         "Button 1 Display Value" => "buttonOneFunction",
@@ -498,7 +457,7 @@ function provisioningmodule_AdminCustomButtonArray()
  *
  * @return array
  */
-function provisioningmodule_ClientAreaCustomButtonArray()
+function whmcs_n8n_ClientAreaCustomButtonArray()
 {
     return array(
         "Action 1 Display Value" => "actionOneFunction",
@@ -517,11 +476,11 @@ function provisioningmodule_ClientAreaCustomButtonArray()
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_AdminCustomButtonArray()
+ * @see whmcs_n8n_AdminCustomButtonArray()
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_buttonOneFunction(array $params)
+function whmcs_n8n_buttonOneFunction(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -529,7 +488,7 @@ function provisioningmodule_buttonOneFunction(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -553,11 +512,11 @@ function provisioningmodule_buttonOneFunction(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_ClientAreaCustomButtonArray()
+ * @see whmcs_n8n_ClientAreaCustomButtonArray()
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_actionOneFunction(array $params)
+function whmcs_n8n_actionOneFunction(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -565,7 +524,7 @@ function provisioningmodule_actionOneFunction(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -590,11 +549,11 @@ function provisioningmodule_actionOneFunction(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_AdminServicesTabFieldsSave()
+ * @see whmcs_n8n_AdminServicesTabFieldsSave()
  *
  * @return array
  */
-function provisioningmodule_AdminServicesTabFields(array $params)
+function whmcs_n8n_AdminServicesTabFields(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -606,15 +565,15 @@ function provisioningmodule_AdminServicesTabFields(array $params)
             'Number of Apples' => (int) $response['numApples'],
             'Number of Oranges' => (int) $response['numOranges'],
             'Last Access Date' => date("Y-m-d H:i:s", $response['lastLoginTimestamp']),
-            'Something Editable' => '<input type="hidden" name="provisioningmodule_original_uniquefieldname" '
+            'Something Editable' => '<input type="hidden" name="whmcs_n8n_original_uniquefieldname" '
                 . 'value="' . htmlspecialchars($response['textvalue']) . '" />'
-                . '<input type="text" name="provisioningmodule_uniquefieldname"'
+                . '<input type="text" name="whmcs_n8n_uniquefieldname"'
                 . 'value="' . htmlspecialchars($response['textvalue']) . '" />',
         );
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -639,17 +598,17 @@ function provisioningmodule_AdminServicesTabFields(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_AdminServicesTabFields()
+ * @see whmcs_n8n_AdminServicesTabFields()
  */
-function provisioningmodule_AdminServicesTabFieldsSave(array $params)
+function whmcs_n8n_AdminServicesTabFieldsSave(array $params)
 {
     // Fetch form submission variables.
-    $originalFieldValue = isset($_REQUEST['provisioningmodule_original_uniquefieldname'])
-        ? $_REQUEST['provisioningmodule_original_uniquefieldname']
+    $originalFieldValue = isset($_REQUEST['whmcs_n8n_original_uniquefieldname'])
+        ? $_REQUEST['whmcs_n8n_original_uniquefieldname']
         : '';
 
-    $newFieldValue = isset($_REQUEST['provisioningmodule_uniquefieldname'])
-        ? $_REQUEST['provisioningmodule_uniquefieldname']
+    $newFieldValue = isset($_REQUEST['whmcs_n8n_uniquefieldname'])
+        ? $_REQUEST['whmcs_n8n_uniquefieldname']
         : '';
 
     // Look for a change in value to avoid making unnecessary service calls.
@@ -660,7 +619,7 @@ function provisioningmodule_AdminServicesTabFieldsSave(array $params)
         } catch (Exception $e) {
             // Record the error in WHMCS's module log.
             logModuleCall(
-                'provisioningmodule',
+                'whmcs_n8n',
                 __FUNCTION__,
                 $params,
                 $e->getMessage(),
@@ -685,7 +644,7 @@ function provisioningmodule_AdminServicesTabFieldsSave(array $params)
  *
  * @return array
  */
-function provisioningmodule_ServiceSingleSignOn(array $params)
+function whmcs_n8n_ServiceSingleSignOn(array $params)
 {
     try {
         // Call the service's single sign-on token retrieval function, using the
@@ -699,7 +658,7 @@ function provisioningmodule_ServiceSingleSignOn(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -730,7 +689,7 @@ function provisioningmodule_ServiceSingleSignOn(array $params)
  *
  * @return array
  */
-function provisioningmodule_AdminSingleSignOn(array $params)
+function whmcs_n8n_AdminSingleSignOn(array $params)
 {
     try {
         // Call the service's single sign-on admin token retrieval function,
@@ -744,7 +703,7 @@ function provisioningmodule_AdminSingleSignOn(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -788,7 +747,7 @@ function provisioningmodule_AdminSingleSignOn(array $params)
  *
  * @return array
  */
-function provisioningmodule_ClientArea(array $params)
+function whmcs_n8n_ClientArea(array $params)
 {
     // Determine the requested action and set service call parameters based on
     // the action.
@@ -820,7 +779,7 @@ function provisioningmodule_ClientArea(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'whmcs_n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
