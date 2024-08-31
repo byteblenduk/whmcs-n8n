@@ -157,23 +157,35 @@ function whmcs_n8n_CreateAccount(array $params)
  */
 function whmcs_n8n_SuspendAccount(array $params)
 {
-    try {
-        // Call the service's suspend function, using the values provided by
-        // WHMCS in `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+    $apiUrl = "{$params['configoption1']}{$params['configoption4']}";
 
-        return $e->getMessage();
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+        ));
+    
+    $response = curl_exec($ch);
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+    
+    if ($httpCode == 200) {
+        return 'success';
+    } else {
+        return 'Failed: Request failed with status code: ' . $httpCode;
+    }
 }
 
 /**
@@ -191,24 +203,37 @@ function whmcs_n8n_SuspendAccount(array $params)
  */
 function whmcs_n8n_UnsuspendAccount(array $params)
 {
-    try {
-        // Call the service's unsuspend function, using the values provided by
-        // WHMCS in `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+    $apiUrl = "{$params['configoption1']}{$params['configoption5']}";
 
-        return $e->getMessage();
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+        ));
+    
+    $response = curl_exec($ch);
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+    
+    if ($httpCode == 200) {
+        return 'success';
+    } else {
+        return 'Failed: Request failed with status code: ' . $httpCode;
+    }
 }
+
 
 /**
  * Terminate instance of a product/service.
@@ -224,23 +249,35 @@ function whmcs_n8n_UnsuspendAccount(array $params)
  */
 function whmcs_n8n_TerminateAccount(array $params)
 {
-    try {
-        // Call the service's terminate function, using the values provided by
-        // WHMCS in `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+    $apiUrl = "{$params['configoption1']}{$params['configoption6']}";
 
-        return $e->getMessage();
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+        ));
+    
+    $response = curl_exec($ch);
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+    
+    if ($httpCode == 200) {
+        return 'success';
+    } else {
+        return 'Failed: Request failed with status code: ' . $httpCode;
+    }
 }
 
 /**
@@ -261,32 +298,35 @@ function whmcs_n8n_TerminateAccount(array $params)
  */
 function whmcs_n8n_ChangePassword(array $params)
 {
-    try {
-        // Call the service's change password function, using the values
-        // provided by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'username' => 'The service username',
-        //     'password' => 'The new service password',
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+    $apiUrl = "{$params['configoption1']}{$params['configoption7']}";
 
-        return $e->getMessage();
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+        ));
+    
+    $response = curl_exec($ch);
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+    
+    if ($httpCode == 200) {
+        return 'success';
+    } else {
+        return 'Failed: Request failed with status code: ' . $httpCode;
+    }
 }
 
 /**
