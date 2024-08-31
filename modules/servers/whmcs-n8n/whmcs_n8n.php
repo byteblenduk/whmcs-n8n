@@ -834,3 +834,12 @@ function whmcs_n8n_ClientArea(array $params)
         );
     }
 }
+
+/**
+Custom function for license checking.
+Not integrated yet and may be unused,
+mainly for testing purposes.
+*/
+function whmcs_n8n_licenseCheck($licenseKey)
+{
+}
