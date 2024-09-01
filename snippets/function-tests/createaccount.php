@@ -44,12 +44,12 @@ $apiKey = 'kAUXn9exMmsdW6fxnvhX62eCnDPFuVgR';
 $params = [
     'configoption1' => $licenseKey,
     'configoption2' => 'https://n8n.vps.dfps.co.uk',
-    'configoption3' => 'test/createaccount',
+    'configoption3' => 'webhook-test/createaccount',
     'configoption4' => $apiKey
 ];
 
 print_r($params);
 
-testingResult = whmcs_n8n_createAccount($params)
+testingResult = whmcs_n8n_createAccount($params);
 
-echo $testingResult
+echo $testingResult;
