@@ -8,8 +8,11 @@
 */
 function whmcs_n8n_CreateAccount(array $params)
 {
-    
-
+    $licenseValid = licenseCheck($params['configoption1']);
+    if ($licenseValid !== true) {
+        // If the license check failed, return the error message
+        return $licenseValid;
+    }
     $apiUrl = "{$params['configoption2']}{$params['configoption3']}";
 
     $ch = curl_init($apiUrl);
