@@ -5,28 +5,28 @@
     "license": "MIT",
     "category": "addon",
     "description": {
-        "name": "Sample Addon Module",
-        "tagline": "An addon module allows you to add additional functionality to WHMCS.",
-        "long": "This sample file demonstrates how an addon module for WHMCS should be structured and exercises all supported functionality.",
+        "name": "WHMCS-N8N Installer",
+        "tagline": "N8N Porvisi9ning Module.",
+        "long": "This module installs and updates the N8N provisioning module, allowing more advanced visual flows.",
         "features": [
-            "Provide both client and admin facing user interfaces",
-            "Utilize hook functionality within WHMCS"
+            "Integration with n8n using its inbuilt webhooks",
+            "Updates to the latest version without messing around with files"
         ]
     },
     "logo": {
         "filename": "logo.png"
     },
     "support": {
-        "homepage": "https:\/\/www.whmcs.com\/", 
-        "learn_more": "https:\/\/www.whmcs.com\/tour", 
-        "email": "support@whmcs.com", 
-        "support_url": "https:\/\/support.whmcs.com\/",
-        "docs_url": "https:\/\/developers.whmcs.com\/addon-modules\/"
+        "homepage": "https:\/\/www.byteblend.co.uk\/", 
+        "learn_more": "https:\/\/www.byteblend.co.uk\/software", 
+        "email": "support@byteblend.co.uk", 
+        "support_url": "https:\/\/support.byteblend.co.uk\/",
+        "docs_url": "https:\/\/docs.byteblend.co.uk\/whmcs-n8n"
     },
     "authors": [
         {
-            "name": "WHMCS",
-            "homepage": "https:\/\/www.whmcs.com\/"
+            "name": "ByteBlend",
+            "homepage": "https:\/\/www.byteblend.co.uk\/"
         }
     ]
 }
