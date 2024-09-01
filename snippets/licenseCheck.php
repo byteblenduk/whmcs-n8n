@@ -1,3 +1,4 @@
+<?php
 // Calls the custom License check function and returns the error message if applicable or continues with the code
 
 $licenseValid = licenseCheck($params['configoption1']);
