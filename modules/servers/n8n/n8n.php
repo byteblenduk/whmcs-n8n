@@ -97,86 +97,10 @@ function n8n_ConfigOptions()
  * @return string "success" or an error message
  */
 function n8n_CreateAccount(array $params) {
-    // Get the function name, remove 'n8n_' prefix, and convert to lowercase
-    $function = strtolower(str_replace('n8n_', '', __FUNCTION__));
-    
-    // Retrieve and sanitize the host configuration option
-    $host = $params['configoption1'];
-    // Remove 'http://' or 'https://' from the beginning of the URL
-    $host = preg_replace('#^https?://#', '', $host);
-    // Remove trailing slash if present
-    $host = rtrim($host, '/');
-    
-    // Retrieve and sanitize the base endpoint configuration option
-    $baseEndpoint = isset($params['configoption3']) ? $params['configoption3'] : '';
-    // Remove leading slash if present
-    $baseEndpoint = ltrim($baseEndpoint, '/');
-    // Remove trailing slash if present
-    $baseEndpoint = rtrim($baseEndpoint, '/');
-    
-    // Construct the API URL
-    if (empty($baseEndpoint)) {
-        // If base endpoint is empty, construct URL without it
-        $apiUrl = "https://{$host}/webhook/{$function}";
-    } else {
-        // If base endpoint is provided, include it in the URL
-        $apiUrl = "https://{$host}/webhook/{$baseEndpoint}/{$function}";
-    }
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+    $result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
-
 
 /**
  * Suspend an instance of a product/service.
@@ -192,60 +116,9 @@ function n8n_CreateAccount(array $params) {
  * @return string "success" or an error message
  */
 function n8n_SuspendAccount(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption4']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -262,60 +135,9 @@ function n8n_SuspendAccount(array $params) {
  * @return string "success" or an error message
  */
 function n8n_UnsuspendAccount(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption5']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 /**
  * Terminate instance of a product/service.
@@ -330,60 +152,9 @@ function n8n_UnsuspendAccount(array $params) {
  * @return string "success" or an error message
  */
 function n8n_TerminateAccount(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption6']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -403,60 +174,9 @@ function n8n_TerminateAccount(array $params) {
  * @return string "success" or an error message
  */
 function n8n_ChangePassword(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption7']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -476,60 +196,9 @@ function n8n_ChangePassword(array $params) {
  * @return string "success" or an error message
  */
 function n8n_ChangePackage(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption8']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -545,60 +214,9 @@ function n8n_ChangePackage(array $params) {
  * @return string "success" or an error message
  */
 function n8n_Renew(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption9']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 /**
  * Test connection with the given server parameters.
@@ -618,60 +236,9 @@ function n8n_Renew(array $params) {
  * @return array
  */
 function n8n_TestConnection(array $params) {
-    $apiUrl = "{$params['configoption1']}{$params['configoption10']}";
-
-    // Prepare the cURL request
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-
-    // Encode the parameters as JSON
-    $jsonPayload = json_encode($params);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return 'Failed: JSON encoding error: ' . json_last_error_msg();
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-
-    // Set the headers, including authorization
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-    ));
-
-    // Set timeout and enable SSL verification
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-    // Execute the cURL request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    // Handle cURL errors
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-
-    // Log and handle the API response
-    $decodedResponse = json_decode($response, true);
-    if ($httpCode == 200) {
-        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return 'success';
-        } else {
-            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
-            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-            return "Failed: " . $errorMessage;
-        }
-    } else {
-        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
-    }
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 /**
  * Additional actions an admin user can invoke.
@@ -1051,3 +618,83 @@ function n8n_ClientArea(array $params)
     }
 }
 */
+function n8n_WebhookPostRequest($params,$functionCalled) {
+    // Get the function name, remove 'n8n_' prefix, and convert to lowercase
+    $function = strtolower(str_replace('n8n_', '', $functionCalled));
+    
+    // Retrieve and sanitize the host configuration option
+    $host = $params['configoption1'];
+    // Remove 'http://' or 'https://' from the beginning of the URL
+    $host = preg_replace('#^https?://#', '', $host);
+    // Remove trailing slash if present
+    $host = rtrim($host, '/');
+    
+    // Retrieve and sanitize the base endpoint configuration option
+    $baseEndpoint = isset($params['configoption3']) ? $params['configoption3'] : '';
+    // Remove leading slash if present
+    $baseEndpoint = ltrim($baseEndpoint, '/');
+    // Remove trailing slash if present
+    $baseEndpoint = rtrim($baseEndpoint, '/');
+    
+    // Construct the API URL
+    if (empty($baseEndpoint)) {
+        // If base endpoint is empty, construct URL without it
+        $apiUrl = "https://{$host}/webhook/{$function}";
+    } else {
+        // If base endpoint is provided, include it in the URL
+        $apiUrl = "https://{$host}/webhook/{$baseEndpoint}/{$function}";
+    }
+
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
+    }
+
+    curl_close($ch);
+
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
+}
