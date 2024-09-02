@@ -7,8 +7,10 @@ The **Respond to Webhook** node in n8n allows you to send a response back to the
 ### 1. Add a Webhook Node
 
 1. **Drag and drop** a **Webhook** node into your n8n workflow.
-2. Configure the **Webhook URL** by setting the HTTP method (e.g., `POST` or `GET`) and the path.
-3. Set up any additional options, such as authentication if needed.
+2. Set the **HTTP Method** to `POST`
+3. Configure the **Webhook URL** by setting the path according to the path rules documentation.
+4. Choose Authentication to Header
+5. Set up any additional options, such as authentication if needed.
 
 ### 2. Process Incoming Data
 
