@@ -15,8 +15,7 @@ For a response to be logged as **successful**, the webhook in n8n must:
 
 ```json
 {
-    "success": true,
-    "data": "Additional optional data here"
+    "success": true
 }
 ```
 
