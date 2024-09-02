@@ -695,6 +695,6 @@ function n8n_WebhookPostRequest($params,$functionCalled) {
         }
     } else {
         logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
-        return "Failed: Request failed with status code: " . $httpCode;
+        return $httpCode . ": " . $decodedResponse['message'];
     }
 }
