@@ -1,35 +1,4 @@
 <?php
-/**
- * WHMCS SDK Sample Provisioning Module
- *
- * Provisioning Modules, also referred to as Product or Server Modules, allow
- * you to create modules that allow for the provisioning and management of
- * products and services in WHMCS.
- *
- * This sample file demonstrates how a provisioning module for WHMCS should be
- * structured and exercises all supported functionality.
- *
- * Provisioning Modules are stored in the /modules/servers/ directory. The
- * module name you choose must be unique, and should be all lowercase,
- * containing only letters & numbers, always starting with a letter.
- *
- * Within the module itself, all functions must be prefixed with the module
- * filename, followed by an underscore, and then the function name. For this
- * example file, the filename is "provisioningmodule" and therefore all
- * functions begin "provisioningmodule_".
- *
- * If your module or third party API does not support a given function, you
- * should not define that function within your module. Only the _ConfigOptions
- * function is required.
- *
- * For more information, please refer to the online documentation.
- *
- * @see https://developers.whmcs.com/provisioning-modules/
- *
- * @copyright Copyright (c) WHMCS Limited 2017
- * @license https://www.whmcs.com/license/ WHMCS Eula
- */
-
 if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
@@ -49,16 +18,12 @@ if (!defined("WHMCS")) {
  *
  * @return array
  */
-function provisioningmodule_MetaData()
+function n8n_MetaData()
 {
     return array(
-        'DisplayName' => 'Demo Provisioning Module',
+        'DisplayName' => 'n8n Provisioning Module',
         'APIVersion' => '1.1', // Use API Version 1.1
-        'RequiresServer' => true, // Set true if module requires a server to work
-        'DefaultNonSSLPort' => '1111', // Default Non-SSL Connection Port
-        'DefaultSSLPort' => '1112', // Default SSL Connection Port
-        'ServiceSingleSignOnLabel' => 'Login to Panel as User',
-        'AdminSingleSignOnLabel' => 'Login to Panel as Admin',
+        'RequiresServer' => false, // Set true if module requires a server to work
     );
 }
 
@@ -85,50 +50,32 @@ function provisioningmodule_MetaData()
  *
  * @return array
  */
-function provisioningmodule_ConfigOptions()
+function n8n_ConfigOptions()
 {
     return array(
-        // a text field type allows for single line text input
-        'Text Field' => array(
+        'n8nUrl' => array(
             'Type' => 'text',
             'Size' => '25',
-            'Default' => '1024',
-            'Description' => 'Enter in megabytes',
+            'Default' => 'https://n8nurl.here',
+            'Description' => 'Set your n8n instance url here, this will be to your login page and not to an individual webhook. Must be a https connection. Do not include a trailing slash',
+            'Name' => 'n8n Instance Url',
+            'SimpleMode' => true,
         ),
-        // a password field type allows for masked text input
-        'Password Field' => array(
+        'n8nApiKey' => array(
             'Type' => 'password',
             'Size' => '25',
             'Default' => '',
-            'Description' => 'Enter secret value here',
+            'Description' => 'Enter your header authorisation key here, read the docs to see how to set this up within n8n.',
+            'Name' => 'n8n Authorisation Key',
+            'SimpleMode' => true,
         ),
-        // the yesno field type displays a single checkbox option
-        'Checkbox Field' => array(
-            'Type' => 'yesno',
-            'Description' => 'Tick to enable',
-        ),
-        // the dropdown field type renders a select menu of options
-        'Dropdown Field' => array(
-            'Type' => 'dropdown',
-            'Options' => array(
-                'option1' => 'Display Value 1',
-                'option2' => 'Second Option',
-                'option3' => 'Another Option',
-            ),
-            'Description' => 'Choose one',
-        ),
-        // the radio field type displays a series of radio button options
-        'Radio Field' => array(
-            'Type' => 'radio',
-            'Options' => 'First Option,Second Option,Third Option',
-            'Description' => 'Choose your option!',
-        ),
-        // the textarea field type allows for multi-line text input
-        'Textarea Field' => array(
-            'Type' => 'textarea',
-            'Rows' => '3',
-            'Cols' => '60',
-            'Description' => 'Freeform multi-line text input field',
+        'baseEndpoint' => array(
+            'Type' => 'text',
+            'Size' => '25',
+            'Default' => 'whmcs',
+            'Description' => 'Your base webhook endpoint as set in your n8n flows webhook path. Read the docs to check how this is used.',
+            'Name' => 'n8n Webhook Base Endpoint',
+            'SimpleMode' => true,
         ),
     );
 }
@@ -149,40 +96,71 @@ function provisioningmodule_ConfigOptions()
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_CreateAccount(array $params)
-{
-    try {
-        // Call the service's provisioning function, using the values provided
-        // by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'domain' => 'The domain of the service to provision',
-        //     'username' => 'The username to access the new service',
-        //     'password' => 'The password to access the new service',
-        //     'configoption1' => 'The amount of disk space to provision',
-        //     'configoption2' => 'The new services secret key',
-        //     'configoption3' => 'Whether or not to enable FTP',
-        //     ...
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_CreateAccount(array $params) {
+    $host = $params['configoption1'];
+    $host = preg_replace('#^https?://#', '', $host);
+    $host = rtrim($host, '/');
+    
+    $baseEndpoint = $params['configoption3'];
+    $baseEndpoint = ltrim($baseEndpoint, '/');
+    $baseEndpoint = rtrim($baseEndpoint, '/');
+    
+    $apiUrl = "https://{$host}/webhook/{$baseEndpoint}/createaccount";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
 }
+
 
 /**
  * Suspend an instance of a product/service.
@@ -197,25 +175,61 @@ function provisioningmodule_CreateAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_SuspendAccount(array $params)
-{
-    try {
-        // Call the service's suspend function, using the values provided by
-        // WHMCS in `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_SuspendAccount(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption4']}";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
 }
 
 /**
@@ -231,27 +245,62 @@ function provisioningmodule_SuspendAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_UnsuspendAccount(array $params)
-{
-    try {
-        // Call the service's unsuspend function, using the values provided by
-        // WHMCS in `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_UnsuspendAccount(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption5']}";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
-}
+    curl_close($ch);
 
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
+}
 /**
  * Terminate instance of a product/service.
  *
@@ -264,25 +313,61 @@ function provisioningmodule_UnsuspendAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_TerminateAccount(array $params)
-{
-    try {
-        // Call the service's terminate function, using the values provided by
-        // WHMCS in `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_TerminateAccount(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption6']}";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
 }
 
 /**
@@ -301,34 +386,61 @@ function provisioningmodule_TerminateAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_ChangePassword(array $params)
-{
-    try {
-        // Call the service's change password function, using the values
-        // provided by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'username' => 'The service username',
-        //     'password' => 'The new service password',
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_ChangePassword(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption7']}";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
 }
 
 /**
@@ -347,35 +459,61 @@ function provisioningmodule_ChangePassword(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_ChangePackage(array $params)
-{
-    try {
-        // Call the service's change password function, using the values
-        // provided by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'username' => 'The service username',
-        //     'configoption1' => 'The new service disk space',
-        //     'configoption3' => 'Whether or not to enable FTP',
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_ChangePackage(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption8']}";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
+    curl_close($ch);
+
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
 }
 
 /**
@@ -390,41 +528,62 @@ function provisioningmodule_ChangePackage(array $params)
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_Renew(array $params)
-{
-    try {
-        // Call the service's provisioning function, using the values provided
-        // by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'domain' => 'The domain of the service to provision',
-        //     'username' => 'The username to access the new service',
-        //     'password' => 'The password to access the new service',
-        //     'configoption1' => 'The amount of disk space to provision',
-        //     'configoption2' => 'The new services secret key',
-        //     'configoption3' => 'Whether or not to enable FTP',
-        //     ...
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+function n8n_Renew(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption9']}";
 
-        return $e->getMessage();
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return 'success';
-}
+    curl_close($ch);
 
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
+}
 /**
  * Test connection with the given server parameters.
  *
@@ -442,44 +601,74 @@ function provisioningmodule_Renew(array $params)
  *
  * @return array
  */
-function provisioningmodule_TestConnection(array $params)
-{
-    try {
-        // Call the service's connection test function.
+function n8n_TestConnection(array $params) {
+    $apiUrl = "{$params['configoption1']}{$params['configoption10']}";
 
-        $success = true;
-        $errorMsg = '';
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'provisioningmodule',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
+    // Prepare the cURL request
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
 
-        $success = false;
-        $errorMsg = $e->getMessage();
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
+    if (curl_errno($ch)) {
+        $errorMessage = curl_error($ch);
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
+        curl_close($ch);
+        return 'Failed: cURL Error: ' . $errorMessage;
     }
 
-    return array(
-        'success' => $success,
-        'error' => $errorMsg,
-    );
-}
+    curl_close($ch);
 
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
+        }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return "Failed: Request failed with status code: " . $httpCode;
+    }
+}
 /**
  * Additional actions an admin user can invoke.
  *
  * Define additional actions that an admin user can perform for an
  * instance of a product/service.
  *
- * @see provisioningmodule_buttonOneFunction()
+ * @see n8n_buttonOneFunction()
  *
  * @return array
  */
-function provisioningmodule_AdminCustomButtonArray()
+/**
+function n8n_AdminCustomButtonArray()
 {
     return array(
         "Button 1 Display Value" => "buttonOneFunction",
@@ -498,7 +687,8 @@ function provisioningmodule_AdminCustomButtonArray()
  *
  * @return array
  */
-function provisioningmodule_ClientAreaCustomButtonArray()
+/**
+function n8n_ClientAreaCustomButtonArray()
 {
     return array(
         "Action 1 Display Value" => "actionOneFunction",
@@ -517,11 +707,12 @@ function provisioningmodule_ClientAreaCustomButtonArray()
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_AdminCustomButtonArray()
+ * @see n8n_AdminCustomButtonArray()
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_buttonOneFunction(array $params)
+/**
+function n8n_buttonOneFunction(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -529,7 +720,7 @@ function provisioningmodule_buttonOneFunction(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -553,11 +744,12 @@ function provisioningmodule_buttonOneFunction(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_ClientAreaCustomButtonArray()
+ * @see n8n_ClientAreaCustomButtonArray()
  *
  * @return string "success" or an error message
  */
-function provisioningmodule_actionOneFunction(array $params)
+/**
+function n8n_actionOneFunction(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -565,7 +757,7 @@ function provisioningmodule_actionOneFunction(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -590,11 +782,12 @@ function provisioningmodule_actionOneFunction(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_AdminServicesTabFieldsSave()
+ * @see n8n_AdminServicesTabFieldsSave()
  *
  * @return array
  */
-function provisioningmodule_AdminServicesTabFields(array $params)
+/**
+function n8n_AdminServicesTabFields(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -606,15 +799,15 @@ function provisioningmodule_AdminServicesTabFields(array $params)
             'Number of Apples' => (int) $response['numApples'],
             'Number of Oranges' => (int) $response['numOranges'],
             'Last Access Date' => date("Y-m-d H:i:s", $response['lastLoginTimestamp']),
-            'Something Editable' => '<input type="hidden" name="provisioningmodule_original_uniquefieldname" '
+            'Something Editable' => '<input type="hidden" name="n8n_original_uniquefieldname" '
                 . 'value="' . htmlspecialchars($response['textvalue']) . '" />'
-                . '<input type="text" name="provisioningmodule_uniquefieldname"'
+                . '<input type="text" name="n8n_uniquefieldname"'
                 . 'value="' . htmlspecialchars($response['textvalue']) . '" />',
         );
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -639,17 +832,18 @@ function provisioningmodule_AdminServicesTabFields(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see provisioningmodule_AdminServicesTabFields()
+ * @see n8n_AdminServicesTabFields()
  */
-function provisioningmodule_AdminServicesTabFieldsSave(array $params)
+/**
+function n8n_AdminServicesTabFieldsSave(array $params)
 {
     // Fetch form submission variables.
-    $originalFieldValue = isset($_REQUEST['provisioningmodule_original_uniquefieldname'])
-        ? $_REQUEST['provisioningmodule_original_uniquefieldname']
+    $originalFieldValue = isset($_REQUEST['n8n_original_uniquefieldname'])
+        ? $_REQUEST['n8n_original_uniquefieldname']
         : '';
 
-    $newFieldValue = isset($_REQUEST['provisioningmodule_uniquefieldname'])
-        ? $_REQUEST['provisioningmodule_uniquefieldname']
+    $newFieldValue = isset($_REQUEST['n8n_uniquefieldname'])
+        ? $_REQUEST['n8n_uniquefieldname']
         : '';
 
     // Look for a change in value to avoid making unnecessary service calls.
@@ -660,7 +854,7 @@ function provisioningmodule_AdminServicesTabFieldsSave(array $params)
         } catch (Exception $e) {
             // Record the error in WHMCS's module log.
             logModuleCall(
-                'provisioningmodule',
+                'n8n',
                 __FUNCTION__,
                 $params,
                 $e->getMessage(),
@@ -685,7 +879,8 @@ function provisioningmodule_AdminServicesTabFieldsSave(array $params)
  *
  * @return array
  */
-function provisioningmodule_ServiceSingleSignOn(array $params)
+/**
+function n8n_ServiceSingleSignOn(array $params)
 {
     try {
         // Call the service's single sign-on token retrieval function, using the
@@ -699,7 +894,7 @@ function provisioningmodule_ServiceSingleSignOn(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -730,7 +925,8 @@ function provisioningmodule_ServiceSingleSignOn(array $params)
  *
  * @return array
  */
-function provisioningmodule_AdminSingleSignOn(array $params)
+/**
+function n8n_AdminSingleSignOn(array $params)
 {
     try {
         // Call the service's single sign-on admin token retrieval function,
@@ -744,7 +940,7 @@ function provisioningmodule_AdminSingleSignOn(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -757,6 +953,7 @@ function provisioningmodule_AdminSingleSignOn(array $params)
         );
     }
 }
+
 
 /**
  * Client area output logic handling.
@@ -788,7 +985,8 @@ function provisioningmodule_AdminSingleSignOn(array $params)
  *
  * @return array
  */
-function provisioningmodule_ClientArea(array $params)
+/*
+function n8n_ClientArea(array $params)
 {
     // Determine the requested action and set service call parameters based on
     // the action.
@@ -820,7 +1018,7 @@ function provisioningmodule_ClientArea(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'provisioningmodule',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -836,3 +1034,4 @@ function provisioningmodule_ClientArea(array $params)
         );
     }
 }
+*/
