@@ -57,8 +57,3 @@ When the webhook returns this response:
   - Any HTTP status code other than `200`
 
 Ensure that your n8n workflows are configured to return the appropriate JSON body and status codes based on the success or failure of the task, as outlined above.
-```
-
-### Notes:
-- Replace `"data": "Additional optional data here"` with any other optional data you may want to include in the successful response.
-- Make sure that your n8n workflow nodes are correctly configured to return the JSON body and HTTP status codes as described.
