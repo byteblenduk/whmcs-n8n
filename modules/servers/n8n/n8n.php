@@ -56,8 +56,8 @@ function n8n_ConfigOptions()
         'n8nUrl' => array(
             'Type' => 'text',
             'Size' => '25',
-            'Default' => 'https://n8nurl.here',
-            'Description' => 'Set your n8n instance url here, this will be to your login page and not to an individual webhook. Must be a https connection. Do not include a trailing slash',
+            'Default' => 'n8nurl.here',
+            'Description' => 'Set your n8n instance url here, this will be to your login page and not to an individual webhook. Must be a https connection.',
             'Name' => 'n8n Instance Url',
             'SimpleMode' => true,
         ),
@@ -97,15 +97,31 @@ function n8n_ConfigOptions()
  * @return string "success" or an error message
  */
 function n8n_CreateAccount(array $params) {
+    // Get the function name, remove 'n8n_' prefix, and convert to lowercase
+    $function = strtolower(str_replace('n8n_', '', __FUNCTION__));
+    
+    // Retrieve and sanitize the host configuration option
     $host = $params['configoption1'];
+    // Remove 'http://' or 'https://' from the beginning of the URL
     $host = preg_replace('#^https?://#', '', $host);
+    // Remove trailing slash if present
     $host = rtrim($host, '/');
     
-    $baseEndpoint = $params['configoption3'];
+    // Retrieve and sanitize the base endpoint configuration option
+    $baseEndpoint = isset($params['configoption3']) ? $params['configoption3'] : '';
+    // Remove leading slash if present
     $baseEndpoint = ltrim($baseEndpoint, '/');
+    // Remove trailing slash if present
     $baseEndpoint = rtrim($baseEndpoint, '/');
     
-    $apiUrl = "https://{$host}/webhook/{$baseEndpoint}/createaccount";
+    // Construct the API URL
+    if (empty($baseEndpoint)) {
+        // If base endpoint is empty, construct URL without it
+        $apiUrl = "https://{$host}/webhook/{$function}";
+    } else {
+        // If base endpoint is provided, include it in the URL
+        $apiUrl = "https://{$host}/webhook/{$baseEndpoint}/{$function}";
+    }
 
     // Prepare the cURL request
     $ch = curl_init($apiUrl);
