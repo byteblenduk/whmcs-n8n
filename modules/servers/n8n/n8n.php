@@ -2,6 +2,12 @@
 if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
+
+// Require any libraries needed for the module to function.
+// require_once __DIR__ . '/path/to/library/loader.php';
+//
+// Also, perform any initialization required by the service's library.
+
 /**
  * Define module related meta data.
  *
@@ -12,12 +18,12 @@ if (!defined("WHMCS")) {
  *
  * @return array
  */
-function whmcs_n8n_MetaData()
+function n8n_MetaData()
 {
     return array(
         'DisplayName' => 'n8n Provisioning Module',
-        'APIVersion' => '1.1',
-        'RequiresServer' => false,
+        'APIVersion' => '1.1', // Use API Version 1.1
+        'RequiresServer' => false, // Set true if module requires a server to work
     );
 }
 
@@ -44,50 +50,32 @@ function whmcs_n8n_MetaData()
  *
  * @return array
  */
-function whmcs_n8n_ConfigOptions()
+function n8n_ConfigOptions()
 {
     return array(
-        'n8n Host' => array(
+        'n8nUrl' => array(
             'Type' => 'text',
-            'Size' => '32',
-            'Default' => 'http://localhost',
-            'Description' => 'Enter the hostname for your n8n instance',
+            'Size' => '25',
+            'Default' => 'n8nurl.here',
+            'Description' => 'Set your n8n instance url here, this will be to your login page and not to an individual webhook. Must be a https connection.',
+            'Name' => 'n8n Instance Url',
+            'SimpleMode' => true,
         ),
-        'n8n Key' => array(
-            'Type' => 'text',
-            'Size' => '32',
-            'Default' => 'api key',
-            'Description' => 'Header authorisation 32 character bearer token',
+        'n8nApiKey' => array(
+            'Type' => 'password',
+            'Size' => '25',
+            'Default' => '',
+            'Description' => 'Enter your header authorisation key here, read the docs to see how to set this up within n8n.',
+            'Name' => 'n8n Authorisation Key',
+            'SimpleMode' => true,
         ),
-        'Create Endpoint' => array(
+        'baseEndpoint' => array(
             'Type' => 'text',
-            'Size' => '32',
-            'Default' => '/createaccount',
-            'Description' => 'Create account endpoint, added onto host above',
-        ),
-        'Suspend Endpoint' => array(
-            'Type' => 'text',
-            'Size' => '32',
-            'Default' => '/suspendaccount',
-            'Description' => 'Suspend account endpoint, added onto host above',
-        ),
-        'Unsuspend Endpoint' => array(
-            'Type' => 'text',
-            'Size' => '32',
-            'Default' => '/unsuspendaccount',
-            'Description' => 'Unsuspend account endpoint, added onto host above',
-        ),
-        'Terminate Endpoint' => array(
-            'Type' => 'text',
-            'Size' => '32',
-            'Default' => '/terminateaccount',
-            'Description' => 'Terminate account endpoint, added onto host above',
-        ),
-        'Change Password Endpoint' => array(
-            'Type' => 'text',
-            'Size' => '32',
-            'Default' => '/changepassword',
-            'Description' => 'Change password endpoint, added onto host above',
+            'Size' => '25',
+            'Default' => 'whmcs',
+            'Description' => 'Your base webhook endpoint as set in your n8n flows webhook path. Read the docs to check how this is used.',
+            'Name' => 'n8n Webhook Base Endpoint',
+            'SimpleMode' => true,
         ),
     );
 }
@@ -108,39 +96,11 @@ function whmcs_n8n_ConfigOptions()
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_CreateAccount(array $params)
-{
-    $apiUrl = "{$params['configoption1']}{$params['configoption3']}";
-
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-        ));
-    
-    $response = curl_exec($ch);
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-    
-    if ($httpCode == 200) {
-        return 'success';
-    } else {
-        return 'Failed: Request failed with status code: ' . $httpCode;
-    }
+function n8n_CreateAccount(array $params) {
+    $result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
-
 
 /**
  * Suspend an instance of a product/service.
@@ -155,37 +115,10 @@ function whmcs_n8n_CreateAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_SuspendAccount(array $params)
-{
-    $apiUrl = "{$params['configoption1']}{$params['configoption4']}";
-
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-        ));
-    
-    $response = curl_exec($ch);
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-    
-    if ($httpCode == 200) {
-        return 'success';
-    } else {
-        return 'Failed: Request failed with status code: ' . $httpCode;
-    }
+function n8n_SuspendAccount(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -201,40 +134,11 @@ function whmcs_n8n_SuspendAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_UnsuspendAccount(array $params)
-{
-    $apiUrl = "{$params['configoption1']}{$params['configoption5']}";
-
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-        ));
-    
-    $response = curl_exec($ch);
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-    
-    if ($httpCode == 200) {
-        return 'success';
-    } else {
-        return 'Failed: Request failed with status code: ' . $httpCode;
-    }
+function n8n_UnsuspendAccount(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
-
-
 /**
  * Terminate instance of a product/service.
  *
@@ -247,37 +151,10 @@ function whmcs_n8n_UnsuspendAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_TerminateAccount(array $params)
-{
-    $apiUrl = "{$params['configoption1']}{$params['configoption6']}";
-
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-        ));
-    
-    $response = curl_exec($ch);
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-    
-    if ($httpCode == 200) {
-        return 'success';
-    } else {
-        return 'Failed: Request failed with status code: ' . $httpCode;
-    }
+function n8n_TerminateAccount(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -296,37 +173,10 @@ function whmcs_n8n_TerminateAccount(array $params)
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_ChangePassword(array $params)
-{
-    $apiUrl = "{$params['configoption1']}{$params['configoption7']}";
-
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $params['configoption2']
-        ));
-    
-    $response = curl_exec($ch);
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if (curl_errno($ch)) {
-        $errorMessage = curl_error($ch);
-        logModuleCall('whmcs_n8n',__FUNCTION__,$params,$errorMessage,curl_getinfo($ch));
-        curl_close($ch);
-        return 'Failed: cURL Error: ' . $errorMessage;
-    }
-
-    curl_close($ch);
-    
-    if ($httpCode == 200) {
-        return 'success';
-    } else {
-        return 'Failed: Request failed with status code: ' . $httpCode;
-    }
+function n8n_ChangePassword(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -345,35 +195,10 @@ function whmcs_n8n_ChangePassword(array $params)
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_ChangePackage(array $params)
-{
-    try {
-        // Call the service's change password function, using the values
-        // provided by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'username' => 'The service username',
-        //     'configoption1' => 'The new service disk space',
-        //     'configoption3' => 'Whether or not to enable FTP',
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        return $e->getMessage();
-    }
-
-    return 'success';
+function n8n_ChangePackage(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
 
 /**
@@ -388,41 +213,11 @@ function whmcs_n8n_ChangePackage(array $params)
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_Renew(array $params)
-{
-    try {
-        // Call the service's provisioning function, using the values provided
-        // by WHMCS in `$params`.
-        //
-        // A sample `$params` array may be defined as:
-        //
-        // ```
-        // array(
-        //     'domain' => 'The domain of the service to provision',
-        //     'username' => 'The username to access the new service',
-        //     'password' => 'The password to access the new service',
-        //     'configoption1' => 'The amount of disk space to provision',
-        //     'configoption2' => 'The new services secret key',
-        //     'configoption3' => 'Whether or not to enable FTP',
-        //     ...
-        // )
-        // ```
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        return $e->getMessage();
-    }
-
-    return 'success';
+function n8n_Renew(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
-
 /**
  * Test connection with the given server parameters.
  *
@@ -440,44 +235,23 @@ function whmcs_n8n_Renew(array $params)
  *
  * @return array
  */
-function whmcs_n8n_TestConnection(array $params)
-{
-    try {
-        // Call the service's connection test function.
-
-        $success = true;
-        $errorMsg = '';
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'whmcs_n8n',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        $success = false;
-        $errorMsg = $e->getMessage();
-    }
-
-    return array(
-        'success' => $success,
-        'error' => $errorMsg,
-    );
+function n8n_TestConnection(array $params) {
+$result = n8n_WebhookPostRequest($params,__FUNCTION__);
+    logModuleCall('n8n', __FUNCTION__, $params, $result, null, array($params['configoption2']));
+    return $result;
 }
-
 /**
  * Additional actions an admin user can invoke.
  *
  * Define additional actions that an admin user can perform for an
  * instance of a product/service.
  *
- * @see whmcs_n8n_buttonOneFunction()
+ * @see n8n_buttonOneFunction()
  *
  * @return array
  */
-function whmcs_n8n_AdminCustomButtonArray()
+/**
+function n8n_AdminCustomButtonArray()
 {
     return array(
         "Button 1 Display Value" => "buttonOneFunction",
@@ -496,7 +270,8 @@ function whmcs_n8n_AdminCustomButtonArray()
  *
  * @return array
  */
-function whmcs_n8n_ClientAreaCustomButtonArray()
+/**
+function n8n_ClientAreaCustomButtonArray()
 {
     return array(
         "Action 1 Display Value" => "actionOneFunction",
@@ -515,11 +290,12 @@ function whmcs_n8n_ClientAreaCustomButtonArray()
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see whmcs_n8n_AdminCustomButtonArray()
+ * @see n8n_AdminCustomButtonArray()
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_buttonOneFunction(array $params)
+/**
+function n8n_buttonOneFunction(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -527,7 +303,7 @@ function whmcs_n8n_buttonOneFunction(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'whmcs_n8n',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -551,11 +327,12 @@ function whmcs_n8n_buttonOneFunction(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see whmcs_n8n_ClientAreaCustomButtonArray()
+ * @see n8n_ClientAreaCustomButtonArray()
  *
  * @return string "success" or an error message
  */
-function whmcs_n8n_actionOneFunction(array $params)
+/**
+function n8n_actionOneFunction(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -563,7 +340,7 @@ function whmcs_n8n_actionOneFunction(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'whmcs_n8n',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -588,11 +365,12 @@ function whmcs_n8n_actionOneFunction(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see whmcs_n8n_AdminServicesTabFieldsSave()
+ * @see n8n_AdminServicesTabFieldsSave()
  *
  * @return array
  */
-function whmcs_n8n_AdminServicesTabFields(array $params)
+/**
+function n8n_AdminServicesTabFields(array $params)
 {
     try {
         // Call the service's function, using the values provided by WHMCS in
@@ -604,15 +382,15 @@ function whmcs_n8n_AdminServicesTabFields(array $params)
             'Number of Apples' => (int) $response['numApples'],
             'Number of Oranges' => (int) $response['numOranges'],
             'Last Access Date' => date("Y-m-d H:i:s", $response['lastLoginTimestamp']),
-            'Something Editable' => '<input type="hidden" name="whmcs_n8n_original_uniquefieldname" '
+            'Something Editable' => '<input type="hidden" name="n8n_original_uniquefieldname" '
                 . 'value="' . htmlspecialchars($response['textvalue']) . '" />'
-                . '<input type="text" name="whmcs_n8n_uniquefieldname"'
+                . '<input type="text" name="n8n_uniquefieldname"'
                 . 'value="' . htmlspecialchars($response['textvalue']) . '" />',
         );
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'whmcs_n8n',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -637,17 +415,18 @@ function whmcs_n8n_AdminServicesTabFields(array $params)
  * @param array $params common module parameters
  *
  * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see whmcs_n8n_AdminServicesTabFields()
+ * @see n8n_AdminServicesTabFields()
  */
-function whmcs_n8n_AdminServicesTabFieldsSave(array $params)
+/**
+function n8n_AdminServicesTabFieldsSave(array $params)
 {
     // Fetch form submission variables.
-    $originalFieldValue = isset($_REQUEST['whmcs_n8n_original_uniquefieldname'])
-        ? $_REQUEST['whmcs_n8n_original_uniquefieldname']
+    $originalFieldValue = isset($_REQUEST['n8n_original_uniquefieldname'])
+        ? $_REQUEST['n8n_original_uniquefieldname']
         : '';
 
-    $newFieldValue = isset($_REQUEST['whmcs_n8n_uniquefieldname'])
-        ? $_REQUEST['whmcs_n8n_uniquefieldname']
+    $newFieldValue = isset($_REQUEST['n8n_uniquefieldname'])
+        ? $_REQUEST['n8n_uniquefieldname']
         : '';
 
     // Look for a change in value to avoid making unnecessary service calls.
@@ -658,7 +437,7 @@ function whmcs_n8n_AdminServicesTabFieldsSave(array $params)
         } catch (Exception $e) {
             // Record the error in WHMCS's module log.
             logModuleCall(
-                'whmcs_n8n',
+                'n8n',
                 __FUNCTION__,
                 $params,
                 $e->getMessage(),
@@ -683,7 +462,8 @@ function whmcs_n8n_AdminServicesTabFieldsSave(array $params)
  *
  * @return array
  */
-function whmcs_n8n_ServiceSingleSignOn(array $params)
+/**
+function n8n_ServiceSingleSignOn(array $params)
 {
     try {
         // Call the service's single sign-on token retrieval function, using the
@@ -697,7 +477,7 @@ function whmcs_n8n_ServiceSingleSignOn(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'whmcs_n8n',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -728,7 +508,8 @@ function whmcs_n8n_ServiceSingleSignOn(array $params)
  *
  * @return array
  */
-function whmcs_n8n_AdminSingleSignOn(array $params)
+/**
+function n8n_AdminSingleSignOn(array $params)
 {
     try {
         // Call the service's single sign-on admin token retrieval function,
@@ -742,7 +523,7 @@ function whmcs_n8n_AdminSingleSignOn(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'whmcs_n8n',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -755,6 +536,7 @@ function whmcs_n8n_AdminSingleSignOn(array $params)
         );
     }
 }
+
 
 /**
  * Client area output logic handling.
@@ -786,7 +568,8 @@ function whmcs_n8n_AdminSingleSignOn(array $params)
  *
  * @return array
  */
-function whmcs_n8n_ClientArea(array $params)
+/*
+function n8n_ClientArea(array $params)
 {
     // Determine the requested action and set service call parameters based on
     // the action.
@@ -818,7 +601,7 @@ function whmcs_n8n_ClientArea(array $params)
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
-            'whmcs_n8n',
+            'n8n',
             __FUNCTION__,
             $params,
             $e->getMessage(),
@@ -834,82 +617,84 @@ function whmcs_n8n_ClientArea(array $params)
         );
     }
 }
-
-/**
-Custom function for license checking.
-Not integrated yet and may be unused,
-mainly for testing purposes.
 */
-function licenseCheck($licenseKey) {
-    $cacheFile = __DIR__ . '/license_cache.json';
-    $cacheLifetime = 600; // 10 minutes
-
-    // Check if the cache file exists and is still valid
-    if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheLifetime) {
-        $cachedData = json_decode(file_get_contents($cacheFile), true);
-        if ($cachedData['status'] === 'valid') {
-            return true;
-        }
+function n8n_WebhookPostRequest($params,$functionCalled) {
+    // Get the function name, remove 'n8n_' prefix, and convert to lowercase
+    $function = strtolower(str_replace('n8n_', '', $functionCalled));
+    
+    // Retrieve and sanitize the host configuration option
+    $host = $params['configoption1'];
+    // Remove 'http://' or 'https://' from the beginning of the URL
+    $host = preg_replace('#^https?://#', '', $host);
+    // Remove trailing slash if present
+    $host = rtrim($host, '/');
+    
+    // Retrieve and sanitize the base endpoint configuration option
+    $baseEndpoint = isset($params['configoption3']) ? $params['configoption3'] : '';
+    // Remove leading slash if present
+    $baseEndpoint = ltrim($baseEndpoint, '/');
+    // Remove trailing slash if present
+    $baseEndpoint = rtrim($baseEndpoint, '/');
+    
+    // Construct the API URL
+    if (empty($baseEndpoint)) {
+        // If base endpoint is empty, construct URL without it
+        $apiUrl = "https://{$host}/webhook/{$function}";
+    } else {
+        // If base endpoint is provided, include it in the URL
+        $apiUrl = "https://{$host}/webhook/{$baseEndpoint}/{$function}";
     }
 
-    // Perform API call to validate the license
-    $apiUrl = "https://billing.vps.dfps.co.uk/api/guest/serviceapikey/get_info";
-
+    // Prepare the cURL request
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['key' => $licenseKey]));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-    
+
+    // Encode the parameters as JSON
+    $jsonPayload = json_encode($params);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return 'Failed: JSON encoding error: ' . json_last_error_msg();
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+
+    // Set the headers, including authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $params['configoption2']
+    ));
+
+    // Set timeout and enable SSL verification
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Execute the cURL request
     $response = curl_exec($ch);
-    
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // Handle cURL errors
     if (curl_errno($ch)) {
         $errorMessage = curl_error($ch);
-        logModuleCall('whmcs_n8n', __FUNCTION__, $licenseKey, $errorMessage, curl_getinfo($ch));
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $errorMessage, null, array($params['configoption2']));
         curl_close($ch);
         return 'Failed: cURL Error: ' . $errorMessage;
     }
+
     curl_close($ch);
 
-    $response = json_decode($response, true);
-
-    // Handle the response
-    if (isset($response['error']) && $response['error'] !== null) {
-        if ($response['error']['message'] === 'API key does not exist') {
-            if (file_exists($cacheFile)) {
-                unlink($cacheFile);
-            }
-            return "Error: License key not found!";
+    // Log and handle the API response
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode == 200) {
+        if (json_last_error() === JSON_ERROR_NONE && isset($decodedResponse['success']) && $decodedResponse['success']) {
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return 'success';
+        } else {
+            $errorMessage = isset($decodedResponse['message']) ? $decodedResponse['message'] : 'Unknown error';
+            logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+            return "Failed: " . $errorMessage;
         }
+    } else {
+        logModuleCall('n8n', __FUNCTION__, $jsonPayload, $response, $decodedResponse, array($params['configoption2']));
+        return $httpCode . ": " . $decodedResponse['message'];
     }
-
-    if (isset($response['result'])) {
-        if ($response['result']['valid'] === false) {
-            if (file_exists($cacheFile)) {
-                unlink($cacheFile);
-            }
-            return "Error: License key no longer valid!";
-        }
-
-        if ($response['result']['valid'] === true && $response['result']['config']['software'] !== 'whmcsn8n') {
-            if (file_exists($cacheFile)) {
-                unlink($cacheFile);
-            }
-            return "Error: License key not for this software!";
-        }
-
-        if ($response['result']['valid'] === true && $response['result']['config']['software'] === 'whmcsn8n') {
-            // License is valid and software matches, so proceed with the next steps
-            $cacheData = [
-                'timestamp' => time(),
-                'license' => $licenseKey,
-                'status' => 'valid'
-            ];
-            file_put_contents($cacheFile, json_encode($cacheData));
-            return true;
-        }
-    }
-
-    // If none of the conditions are met, return a generic error
-    return "Error: Unexpected API response.";
 }
